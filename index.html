@@ -1,0 +1,585 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Liella! 하라주쿠 대소동 - 팬게임 프로토타입</title>
+<style>
+  :root{
+    --bg:#fff7fb;
+    --panel:#ffffff;
+    --ink:#24222a;
+    --muted:#77727f;
+    --accent:#f08ab6;
+    --accent2:#8cc7ff;
+    --line:#eadfe6;
+    --shadow:0 18px 45px rgba(76,46,66,.12);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    min-height:100vh;
+    font-family:system-ui,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(circle at 15% 10%, #ffe7f2 0 18%, transparent 36%),
+      radial-gradient(circle at 90% 0%, #e8f5ff 0 18%, transparent 35%),
+      linear-gradient(180deg,#fffafd 0%,#fff7fb 100%);
+  }
+  .wrap{
+    width:min(960px,100%);
+    margin:0 auto;
+    padding:18px;
+  }
+  .topbar{
+    display:flex; justify-content:space-between; align-items:center; gap:12px;
+    margin-bottom:14px;
+  }
+  .brand h1{font-size:clamp(22px,4vw,34px); margin:0; line-height:1.1}
+  .brand p{margin:5px 0 0; color:var(--muted); font-size:13px}
+  .actions{display:flex; gap:8px}
+  button{
+    border:0; border-radius:14px; padding:12px 16px; font-weight:700;
+    cursor:pointer; transition:.15s transform,.15s opacity,.15s box-shadow;
+    font-size:15px;
+  }
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(1px)}
+  .ghost{background:#fff; border:1px solid var(--line); color:#4c4850}
+  .game{
+    display:grid;
+    grid-template-columns:260px 1fr;
+    gap:16px;
+  }
+  .panel{
+    background:rgba(255,255,255,.93);
+    border:1px solid rgba(234,223,230,.95);
+    border-radius:24px;
+    box-shadow:var(--shadow);
+  }
+  .side{padding:18px; align-self:start}
+  .stats{display:grid; gap:12px}
+  .stat{
+    display:grid; grid-template-columns:1fr auto; gap:8px; align-items:center;
+    padding-bottom:10px; border-bottom:1px dashed var(--line);
+  }
+  .stat:last-child{border-bottom:0}
+  .stat span{font-size:14px; color:var(--muted)}
+  .stat b{font-size:18px}
+  .mini-title{font-size:13px; color:var(--muted); margin:18px 0 8px}
+  .log{
+    font-size:12px; color:#69636e; line-height:1.55; max-height:230px; overflow:auto;
+    background:#fff8fb; border-radius:14px; padding:10px;
+  }
+
+  .main{min-height:650px; overflow:hidden; position:relative}
+  .scene{
+    min-height:650px;
+    padding:24px;
+    display:flex; flex-direction:column;
+    position:relative;
+  }
+  .location{
+    position:absolute; right:20px; top:18px;
+    background:#ffffffcc; border:1px solid var(--line);
+    border-radius:999px; padding:7px 11px;
+    font-size:12px; color:#5b5660;
+  }
+  .stage{
+    display:flex; align-items:flex-end; justify-content:center;
+    gap:20px; min-height:245px; padding-top:18px;
+  }
+  .char{
+    width:140px; text-align:center;
+    animation:pop .25s ease-out;
+  }
+  .avatar{
+    width:130px; height:130px; margin:auto;
+    border-radius:32px;
+    display:grid; place-items:center;
+    font-size:48px; font-weight:900; color:#fff;
+    box-shadow:0 14px 30px rgba(0,0,0,.12);
+    border:5px solid #fff;
+  }
+  .char .name{
+    display:inline-block; margin-top:10px; padding:5px 10px; border-radius:999px;
+    background:#fff; font-weight:800; font-size:14px; border:1px solid var(--line);
+  }
+  .natsumi .avatar{background:linear-gradient(145deg,#ffb13b,#ff7d38)}
+  .kuku .avatar{background:linear-gradient(145deg,#7fd4ff,#73aaff)}
+  .kanon .avatar{background:linear-gradient(145deg,#ff8f91,#ff6f78)}
+  @keyframes pop{from{opacity:0; transform:scale(.94) translateY(8px)}to{opacity:1; transform:none}}
+
+  .dialogue{
+    margin-top:auto;
+    background:#fff; border:1px solid var(--line);
+    border-radius:22px; padding:18px;
+    box-shadow:0 12px 30px rgba(84,55,72,.08);
+  }
+  .speaker{
+    display:inline-block; font-weight:900; font-size:14px;
+    background:#f8edf3; border-radius:999px; padding:6px 10px; margin-bottom:10px;
+  }
+  .text{
+    font-size:clamp(16px,2.4vw,20px);
+    line-height:1.65; min-height:72px; white-space:pre-line;
+  }
+  .choices{display:grid; gap:9px; margin-top:16px}
+  .choice{
+    text-align:left; background:#fff8fb; border:1px solid #efdce6; color:#332f36;
+  }
+  .choice:hover{box-shadow:0 8px 22px rgba(240,138,182,.14); border-color:#eeb1cc}
+  .footer-note{margin-top:12px; font-size:11px; color:#8a8490; text-align:center}
+  .ending{
+    display:none; padding:24px; text-align:center;
+    min-height:650px; place-items:center;
+  }
+  .ending.on{display:grid}
+  .ending-card{
+    max-width:560px;
+    background:#fff; border:1px solid var(--line); border-radius:28px;
+    padding:30px; box-shadow:var(--shadow);
+  }
+  .ending h2{font-size:30px; margin:0 0 10px}
+  .ending p{line-height:1.7; color:#5f5964}
+  .ending .big{font-size:64px; margin-bottom:10px}
+  .ending .result{
+    margin:18px 0; background:#fff7fb; border-radius:18px; padding:14px; font-weight:800
+  }
+  @media (max-width:760px){
+    .game{grid-template-columns:1fr}
+    .side{order:2}
+    .main{order:1; min-height:600px}
+    .scene,.ending{min-height:600px}
+    .stage{min-height:210px; gap:10px}
+    .char{width:105px}
+    .avatar{width:96px;height:96px;border-radius:26px;font-size:36px}
+    .topbar{align-items:flex-start}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand">
+      <h1>Liella! 하라주쿠 대소동</h1>
+      <p>비공식 팬게임 프로토타입 · 10분 내외 · 설치 불필요</p>
+    </div>
+    <div class="actions">
+      <button class="ghost" onclick="saveGame()">저장</button>
+      <button class="ghost" onclick="resetGame()">처음부터</button>
+    </div>
+  </div>
+
+  <div class="game">
+    <aside class="panel side">
+      <div class="stats">
+        <div class="stat"><span>🧡 나츠미 호감도</span><b id="natsumiStat">0</b></div>
+        <div class="stat"><span>💙 쿠쿠 호감도</span><b id="kukuStat">0</b></div>
+        <div class="stat"><span>❤️ 카논 호감도</span><b id="kanonStat">0</b></div>
+        <div class="stat"><span>💴 소지금</span><b><span id="moneyStat">3000</span>엔</b></div>
+        <div class="stat"><span>⚡ 체력</span><b><span id="energyStat">5</span>/5</b></div>
+      </div>
+      <div class="mini-title">최근 기록</div>
+      <div class="log" id="logBox">하라주쿠에 도착했다.</div>
+    </aside>
+
+    <main class="panel main">
+      <section class="scene" id="sceneBox">
+        <div class="location" id="locationTag">하라주쿠역 앞</div>
+        <div class="stage" id="stage"></div>
+        <div class="dialogue">
+          <div class="speaker" id="speaker">시스템</div>
+          <div class="text" id="text">오랜만에 하라주쿠에 왔다.
+오늘 목표는 딱 하나. 조용히 굿즈만 사고 돌아가는 것.</div>
+          <div class="choices" id="choices"></div>
+        </div>
+        <div class="footer-note">※ 팬메이드 프로토타입. 공식 이미지·음원은 사용하지 않았습니다.</div>
+      </section>
+
+      <section class="ending" id="endingBox">
+        <div class="ending-card">
+          <div class="big" id="endingEmoji">🎉</div>
+          <h2 id="endingTitle">엔딩</h2>
+          <p id="endingText"></p>
+          <div class="result" id="endingResult"></div>
+          <button onclick="resetGame()">다시 하기</button>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script>
+const initialState = () => ({
+  node:"start",
+  natsumi:0,
+  kuku:0,
+  kanon:0,
+  money:3000,
+  energy:5,
+  flags:{video:false,melon:false,escape:false},
+  log:["하라주쿠에 도착했다."]
+});
+
+let state = initialState();
+
+const nodes = {
+  start:{
+    location:"하라주쿠역 앞",
+    speaker:"시스템",
+    text:"오랜만에 하라주쿠에 왔다.\n오늘 목표는 딱 하나. 조용히 굿즈만 사고 돌아가는 것.",
+    chars:[],
+    choices:[
+      ["타케시타 거리로 간다","meetNatsumi"],
+      ["일단 카페부터 찾는다","meetKuku"]
+    ]
+  },
+
+  meetNatsumi:{
+    location:"타케시타 거리",
+    speaker:"오니츠카 나츠미",
+    text:"「오호호~! 마침 잘 됐습니다노! 지금부터 '하라주쿠에서 아무나 붙잡고 하루종일 끌고 다니기' 영상을 찍을 겁니다노!」\n\n…아무나는 아무래도 나인 것 같다.",
+    chars:["natsumi"],
+    choices:[
+      ["촬영을 도와준다","+n2;video;videoShoot"],
+      ["출연료부터 묻는다","+n1;+m500;feeRoute"],
+      ["못 본 척 도망간다","-n1;escape;runKuku"]
+    ]
+  },
+
+  videoShoot:{
+    location:"타케시타 거리",
+    speaker:"오니츠카 나츠미",
+    text:"「완벽합니다노! 자, 첫 번째 미션! 길거리 멜론빵을 사서 10초 안에 먹는 겁니다노!」",
+    chars:["natsumi"],
+    choices:[
+      ["내 돈으로 사준다","+n2;-m600;melon;melonScene"],
+      ["나츠미 돈으로 사라고 한다","+n0;melonNo"],
+      ["멜론빵 대신 타코야키를 찾자고 한다","+n1;-e1;takoyaki"]
+    ]
+  },
+
+  feeRoute:{
+    location:"타케시타 거리",
+    speaker:"오니츠카 나츠미",
+    text:"「비즈니스 마인드… 훌륭합니다노. 선금 500엔! 대신 조회수 10만 넘으면 보너스 없습니다노!」\n\n뭔가 계약을 잘못한 것 같다.",
+    chars:["natsumi"],
+    choices:[
+      ["그래도 촬영한다","+n1;videoShoot"],
+      ["500엔 받고 튄다","+m0;-n2;runKuku"]
+    ]
+  },
+
+  melonScene:{
+    location:"타케시타 거리",
+    speaker:"오니츠카 나츠미",
+    text:"나츠미는 멜론빵을 받아 들고 만족스럽게 고개를 끄덕였다.\n「역시 센스가 있습니다노! 다음 콘텐츠도 같이 찍죠!」",
+    chars:["natsumi"],
+    choices:[
+      ["다음 촬영도 따라간다","+n2;-e1;kukuInterrupt"],
+      ["여기서 빠져나간다","+n0;meetKuku"]
+    ]
+  },
+
+  melonNo:{
+    location:"타케시타 거리",
+    speaker:"오니츠카 나츠미",
+    text:"「……그 정도 투자도 없이 대박 콘텐츠를 바라십니까노?」\n\n눈빛이 차갑다.",
+    chars:["natsumi"],
+    choices:[
+      ["미안하다고 하고 사준다","+n1;-m600;melon;kukuInterrupt"],
+      ["원래 제작비는 PD가 내는 거라 반박한다","+n1;debate"]
+    ]
+  },
+
+  debate:{
+    location:"하라주쿠 골목",
+    speaker:"오니츠카 나츠미",
+    text:"10분간의 치열한 제작비 논쟁 끝에 서로 한 발씩 물러났다.\n결론: 반반 부담.",
+    chars:["natsumi"],
+    choices:[
+      ["300엔을 낸다","+n1;-m300;kukuInterrupt"]
+    ]
+  },
+
+  takoyaki:{
+    location:"하라주쿠 골목",
+    speaker:"오니츠카 나츠미",
+    text:"타코야키 가게를 찾다가 길을 잘못 들었다.\n「이것도 콘텐츠입니다노! 길 잃어버린 척이 아니라 진짜로 길을 잃었습니다노!」",
+    chars:["natsumi"],
+    choices:[
+      ["지도를 켠다","+n1;kukuInterrupt"],
+      ["감으로 간다","-e1;runKuku"]
+    ]
+  },
+
+  kukuInterrupt:{
+    location:"타케시타 거리",
+    speaker:"탕 쿠쿠",
+    text:"「잠깐! 또 이상한 영상 찍고 있는 거예요?!」\n쿠쿠가 나타나 카메라와 나츠미를 번갈아 본다.",
+    chars:["natsumi","kuku"],
+    choices:[
+      ["나츠미 편을 든다","+n1;-k1;groupCafe"],
+      ["쿠쿠 말이 맞다고 한다","+k2;-n1;groupCafe"],
+      ["나는 그냥 지나가던 사람이라고 한다","+k1;runAwayCafe"]
+    ]
+  },
+
+  runKuku:{
+    location:"하라주쿠 카페 앞",
+    speaker:"탕 쿠쿠",
+    text:"도망치다가 누군가와 부딪혔다.\n「괜찮으세요? …어라? 왜 그렇게 필사적으로 뛰고 있습니까?」\n뒤를 보니 멀리서 나츠미가 쫓아오고 있다.",
+    chars:["kuku"],
+    choices:[
+      ["쿠쿠 뒤에 숨는다","+k2;groupCafe"],
+      ["아무 일도 아니라고 한다","+k1;meetKanon"]
+    ]
+  },
+
+  meetKuku:{
+    location:"하라주쿠 카페",
+    speaker:"탕 쿠쿠",
+    text:"카페에 들어가자 익숙한 목소리가 들렸다.\n「여기 디저트, 정말 맛있습니다! 하나 먹어보세요!」",
+    chars:["kuku"],
+    choices:[
+      ["같은 걸 주문한다","+k2;-m900;cafeTalk"],
+      ["물만 마신다","+k0;cafeTalk"]
+    ]
+  },
+
+  cafeTalk:{
+    location:"하라주쿠 카페",
+    speaker:"탕 쿠쿠",
+    text:"쿠쿠는 오늘 Liella! 멤버들이 근처에서 연습 중이라고 알려준다.\n「시간 있으면 같이 가요!」",
+    chars:["kuku"],
+    choices:[
+      ["따라간다","+k1;-e1;meetKanon"],
+      ["굿즈 쇼핑이 먼저다","+k0;shopping"]
+    ]
+  },
+
+  runAwayCafe:{
+    location:"하라주쿠 카페",
+    speaker:"시스템",
+    text:"일단 셋이 카페로 피신했다. 나츠미와 쿠쿠는 아직도 서로 말이 많다.\n이 와중에 계산서는 내 앞에 놓였다.",
+    chars:["natsumi","kuku"],
+    choices:[
+      ["셋 다 계산한다","+n1;+k1;-m1800;meetKanon"],
+      ["각자 계산하자고 한다","+k1;meetKanon"]
+    ]
+  },
+
+  groupCafe:{
+    location:"하라주쿠 카페",
+    speaker:"오니츠카 나츠미",
+    text:"결국 셋이 카페로 들어왔다.\n나츠미는 편집 아이디어를 말하고, 쿠쿠는 옆에서 계속 태클을 건다.",
+    chars:["natsumi","kuku"],
+    choices:[
+      ["둘의 싸움을 말린다","+n1;+k1;meetKanon"],
+      ["조용히 디저트를 먹는다","-m700;+e1;meetKanon"]
+    ]
+  },
+
+  shopping:{
+    location:"하라주쿠 굿즈숍",
+    speaker:"시스템",
+    text:"굿즈숍에 도착했다. 그런데 한정 아크릴 스탠드가 딱 하나 남았다.",
+    chars:[],
+    choices:[
+      ["바로 산다","-m1800;meetKanon"],
+      ["참는다","+e1;meetKanon"]
+    ]
+  },
+
+  meetKanon:{
+    location:"유이가오카 근처",
+    speaker:"시부야 카논",
+    text:"「어? 여기 있었구나! 쿠쿠한테 들었어. 오늘 같이 다녔다면서?」\n카논은 웃으며 연습실에 놀러 오지 않겠냐고 묻는다.",
+    chars:["kanon"],
+    choices:[
+      ["연습실에 간다","+c2;-e1;practice"],
+      ["오늘은 너무 지쳤다","+c1;streetEndCheck"]
+    ]
+  },
+
+  practice:{
+    location:"유이가오카 연습실",
+    speaker:"시부야 카논",
+    text:"연습이 끝나고 멤버들이 간단한 간식을 나눠 먹는다.\n카논이 묻는다.\n「오늘 하루, 어땠어?」",
+    chars:["kanon","kuku","natsumi"],
+    choices:[
+      ["나츠미랑 있어서 재밌었다","+n2;finalCheck"],
+      ["쿠쿠 덕분에 살았다","+k2;finalCheck"],
+      ["다 같이 있어서 좋았다","+c2;+n1;+k1;finalCheck"]
+    ]
+  },
+
+  streetEndCheck:{
+    location:"하라주쿠역 앞",
+    speaker:"시스템",
+    text:"슬슬 돌아갈 시간이다.\n평범하게 굿즈만 사고 돌아가려던 계획은 완전히 망했다.",
+    chars:[],
+    choices:[
+      ["오늘을 정리한다","finalCheck"]
+    ]
+  },
+
+  finalCheck:{
+    location:"엔딩 판정",
+    speaker:"시스템",
+    text:"오늘 하루의 결과는…",
+    chars:[],
+    choices:[
+      ["결과 보기","END"]
+    ]
+  }
+};
+
+function parseAction(action){
+  const parts = action.split(";");
+  let next = null;
+  for(const p of parts){
+    if(p.startsWith("+n")) state.natsumi += Number(p.slice(2));
+    else if(p.startsWith("-n")) state.natsumi -= Number(p.slice(2));
+    else if(p.startsWith("+k")) state.kuku += Number(p.slice(2));
+    else if(p.startsWith("-k")) state.kuku -= Number(p.slice(2));
+    else if(p.startsWith("+c")) state.kanon += Number(p.slice(2));
+    else if(p.startsWith("-c")) state.kanon -= Number(p.slice(2));
+    else if(p.startsWith("+m")) state.money += Number(p.slice(2));
+    else if(p.startsWith("-m")) state.money -= Number(p.slice(2));
+    else if(p.startsWith("+e")) state.energy = Math.min(5,state.energy+Number(p.slice(2)));
+    else if(p.startsWith("-e")) state.energy = Math.max(0,state.energy-Number(p.slice(2)));
+    else if(p==="video") state.flags.video=true;
+    else if(p==="melon") state.flags.melon=true;
+    else if(p==="escape") state.flags.escape=true;
+    else next = p;
+  }
+  state.money = Math.max(0,state.money);
+  if(next==="END") return finish();
+  if(next){
+    state.node = next;
+    const n = nodes[next];
+    if(n) state.log.push(`${n.location}: ${n.speaker}`);
+  }
+  render();
+}
+
+function charHTML(id){
+  const map = {
+    natsumi:["나", "오니츠카 나츠미","natsumi"],
+    kuku:["쿠","탕 쿠쿠","kuku"],
+    kanon:["카","시부야 카논","kanon"]
+  };
+  const [letter,name,cls] = map[id];
+  return `<div class="char ${cls}">
+    <div class="avatar">${letter}</div>
+    <div class="name">${name}</div>
+  </div>`;
+}
+
+function render(){
+  const n = nodes[state.node];
+  document.getElementById("sceneBox").style.display="flex";
+  document.getElementById("endingBox").classList.remove("on");
+  document.getElementById("locationTag").textContent=n.location;
+  document.getElementById("speaker").textContent=n.speaker;
+  document.getElementById("text").textContent=n.text;
+  document.getElementById("stage").innerHTML=(n.chars||[]).map(charHTML).join("");
+
+  const choiceBox=document.getElementById("choices");
+  choiceBox.innerHTML="";
+  n.choices.forEach(([label,action])=>{
+    const b=document.createElement("button");
+    b.className="choice";
+    b.textContent=label;
+    b.onclick=()=>parseAction(action);
+    choiceBox.appendChild(b);
+  });
+
+  updateStats();
+}
+
+function updateStats(){
+  document.getElementById("natsumiStat").textContent=state.natsumi;
+  document.getElementById("kukuStat").textContent=state.kuku;
+  document.getElementById("kanonStat").textContent=state.kanon;
+  document.getElementById("moneyStat").textContent=state.money;
+  document.getElementById("energyStat").textContent=state.energy;
+  document.getElementById("logBox").innerHTML=state.log.slice(-8).map(x=>`• ${x}`).join("<br>");
+}
+
+function finish(){
+  let title="", text="", emoji="🎉";
+  const max = Math.max(state.natsumi,state.kuku,state.kanon);
+
+  if(state.money===0){
+    title="하라주쿠 파산 엔딩";
+    emoji="💸";
+    text="즐거운 하루였지만 통장에는 아무것도 남지 않았다. 다음 여행에서는 예산을 먼저 정하자.";
+  } else if(state.energy===0){
+    title="체력 방전 엔딩";
+    emoji="🪫";
+    text="끝까지 버티긴 했지만 하라주쿠역 의자에 앉자마자 움직일 수 없게 됐다.";
+  } else if(state.natsumi===max && state.natsumi>=4){
+    title="나츠미 전속 촬영 스태프 엔딩";
+    emoji="🧡";
+    text="나츠미에게 다음 영상 촬영도 같이 하자는 연락이 왔다. 출연료 협상은 아직 끝나지 않았다.";
+  } else if(state.kuku===max && state.kuku>=4){
+    title="쿠쿠와 하라주쿠 디저트 투어 엔딩";
+    emoji="💙";
+    text="쿠쿠에게 다음번에는 더 맛있는 곳을 알려주겠다는 메시지가 왔다. 지갑이 조금 걱정된다.";
+  } else if(state.kanon===max && state.kanon>=4){
+    title="Liella! 연습실 단골 엔딩";
+    emoji="❤️";
+    text="카논이 다음에도 시간 되면 놀러 오라고 했다. 조용한 하루는 아니었지만 나쁘지 않았다.";
+  } else if(state.flags.escape && state.natsumi<0){
+    title="나츠미에게 찍힌 사람 엔딩";
+    emoji="🏃";
+    text="하라주쿠 골목에서 주황색 머리카락만 보여도 반사적으로 방향을 틀게 됐다.";
+  } else {
+    title="평범하게(?) 즐거운 하루 엔딩";
+    emoji="✨";
+    text="큰 사건 없이 하루가 끝났다. 하지만 다음번에도 이런 일이 없으리라는 보장은 없다.";
+  }
+
+  document.getElementById("sceneBox").style.display="none";
+  document.getElementById("endingBox").classList.add("on");
+  document.getElementById("endingEmoji").textContent=emoji;
+  document.getElementById("endingTitle").textContent=title;
+  document.getElementById("endingText").textContent=text;
+  document.getElementById("endingResult").textContent=
+    `나츠미 ${state.natsumi} · 쿠쿠 ${state.kuku} · 카논 ${state.kanon} · 남은 돈 ${state.money}엔 · 체력 ${state.energy}/5`;
+
+  state.log.push(`엔딩: ${title}`);
+  updateStats();
+}
+
+function saveGame(){
+  localStorage.setItem("liellaHarajukuSave",JSON.stringify(state));
+  alert("저장 완료!");
+}
+
+function loadGame(){
+  const saved=localStorage.getItem("liellaHarajukuSave");
+  if(saved){
+    try{
+      state=JSON.parse(saved);
+      if(!nodes[state.node]) state=initialState();
+    }catch(e){ state=initialState(); }
+  }
+  render();
+}
+
+function resetGame(){
+  if(confirm("처음부터 다시 할까?")){
+    state=initialState();
+    localStorage.removeItem("liellaHarajukuSave");
+    render();
+  }
+}
+
+loadGame();
+</script>
+</body>
+</html>
